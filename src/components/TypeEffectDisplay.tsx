@@ -46,6 +46,8 @@ const StyledTypeInput = styled.div<any>`
 		switch (props.effectiveness) {
 			case 0:
 				return "cyan";
+			case 0.25:
+				return "blue";
 			case 0.5:
 				return "green";
 			case 1:
