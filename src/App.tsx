@@ -3,6 +3,7 @@ import TypeInput from "./components/TypeInput";
 import TypeEffectDisplay from "./components/TypeEffectDisplay";
 import { TYPES, TYPE_RELATIONS } from "./pokemonData/Types";
 import styled from "styled-components";
+import Moize from "moize"
 
 const allTypes = Object.values(TYPES);
 const createInitialState = () => {
@@ -31,29 +32,12 @@ const App = () => {
 	const [attackEffectivenessTable, updateAttackEffectivnessTable] =
 		React.useState(initialEffectivenesState);
 
-	const buildAttackEffectivnessTable = (type: string) => {
-		const { attack } = TYPE_RELATIONS[type];
-		const nextState = { ...initialEffectivenesState };
-		const updateEffectivenesState = (type: any, effect: number) => {
-			nextState[type] = effect;
-		};
-		attack.effective.forEach((type: any) =>
-			updateEffectivenesState(type, 2)
-		);
-		attack.weak.forEach((type: any) => updateEffectivenesState(type, 0.5));
-		attack.noDamage.forEach((type: any) =>
-			updateEffectivenesState(type, 0)
-		);
-		updateAttackEffectivnessTable(nextState);
-	};
-
 	const updateToggledStateAttack = (type: string) => {
 		const nextState = {
 			...initialState,
 		};
 		nextState[type] = !toggledTypesAttack[type];
 		setToggledTypesAttack(nextState);
-		buildAttackEffectivnessTable(type);
 	};
 
 	const [toggledTypesDefense, setToggledTypesDefense] =
@@ -62,28 +46,6 @@ const App = () => {
 	const [defenseEffectivenessTable, updateDefenseEffectivnessTable] =
 		React.useState(initialEffectivenesState);
 
-	const buildDefenseEffectivnessTable = () => {
-		const nextState = { ...initialEffectivenesState };
-		allTypes.forEach(type => {
-			if (!toggledTypesDefense[type]) return;
-			const { defense } = TYPE_RELATIONS[type];
-			defense.strong.forEach((e:any) => {
-				nextState[e] = nextState[e] * 0.5;
-			})
-			defense.immune.forEach((e:any) => {
-				nextState[e] = 0;
-			})
-			defense.weak.forEach((e:any) => {
-				nextState[e] = nextState[e] * 2;
-			})
-		})
-		updateDefenseEffectivnessTable(nextState);
-	};
-
-	React.useEffect(() => {
-		buildDefenseEffectivnessTable();
-	}, [toggledTypesDefense])
-
 	const updateToggledStateDefense = (type: string) => {
 		const nextState = {
 			...toggledTypesDefense,
@@ -91,6 +53,50 @@ const App = () => {
 		nextState[type] = !toggledTypesDefense[type];
 		setToggledTypesDefense(nextState);
 	};
+
+	const buildAttackEffectivnessTable = Moize(() => {
+		const nextState = { ...initialEffectivenesState };
+		allTypes.forEach((type) => {
+			if (!toggledTypesAttack[type]) return;
+			const { attack } = TYPE_RELATIONS[type];
+			const updateEffectivenesState = (type: any, effect: number) => {
+				nextState[type] = effect;
+			};
+			attack.effective.forEach((type: any) =>
+				updateEffectivenesState(type, 2)
+			);
+			attack.weak.forEach((type: any) =>
+				updateEffectivenesState(type, 0.5)
+			);
+			attack.noDamage.forEach((type: any) =>
+				updateEffectivenesState(type, 0)
+			);
+		});
+		updateAttackEffectivnessTable(nextState);
+	});
+
+	const buildDefenseEffectivnessTable = Moize(() => {
+		const nextState = { ...initialEffectivenesState };
+		allTypes.forEach((type) => {
+			if (!toggledTypesDefense[type]) return;
+			const { defense } = TYPE_RELATIONS[type];
+			defense.strong.forEach((e: any) => {
+				nextState[e] = nextState[e] * 0.5;
+			});
+			defense.immune.forEach((e: any) => {
+				nextState[e] = 0;
+			});
+			defense.weak.forEach((e: any) => {
+				nextState[e] = nextState[e] * 2;
+			});
+		});
+		updateDefenseEffectivnessTable(nextState);
+	});
+
+	React.useEffect(() => {
+		buildDefenseEffectivnessTable();
+		buildAttackEffectivnessTable();
+	}, [toggledTypesDefense, toggledTypesAttack]);
 
 	return (
 		<StyledApp>
